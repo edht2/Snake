@@ -4,84 +4,135 @@ from piece import Piece
 exit = False
 grid_size = 30
 cube_size = 30
+menu = False
+selected = 1
 snake = [Piece(1, 4, 1, grid_size), Piece(2, 4, 1, grid_size)]
 food = Piece(randint(10,900/grid_size), randint(10,900/grid_size), 0, grid_size)
 box = pygame.Rect(grid_size, grid_size, screen.get_width()-grid_size, screen.get_height()-grid_size)
-font = pygame.font.Font('CONSOLA.TTF', 40)
+font = pygame.font.Font('CONSOLA.TTF', 60)
+mfont = pygame.font.Font('CONSOLA.TTF', 20)
 score = 0
 death = False
+menu_options = [
+  (' Start ', 0),
+  (' Difficulty ', 1)
+]
 
 while not exit:
   dt = clock.tick(fps) # set fps
   screen.fill('#001111')
+  
+  # Menu                                     
+  if menu:
+    fps = 10
+    index = 0                                      
+    menu_dimensions = pygame.Rect(screen.get_width()/2, screen.get_height()/3, 300, 300)
+    menu_rect = pygame.draw.rect(screen, (240,240,240), menu_dimensions, 2)
+    for menu_option in menu_options:
+      index += 30
+      focused_bc = None
+      focused_i = ''
+      focused_tc = '#ffffff'
+      if selected == menu_option[1]:
+        focused_bc = '#ffffff'
+        focused_tc = '#000000'
+        focused_i = '> '
+        
+      option = f"{focused_i}{menu_option[0]}"
+      text = mfont.render(option, True, focused_tc, focused_bc)
+      screen.blit(text, (menu_rect.x, menu_rect.y+index))
+    
+    
   for event in pygame.event.get():
     if event.type == KEYDOWN:
       if event.key == K_BACKSPACE:
         exit = True
       elif event.type == QUIT:
         exit = True
-      if event.key == K_LEFT:
+      if event.key == K_DOWN and menu:
+        if selected + 1 > len(menu_options) - 1:
+          print("top")
+          selected = 0
+        else:
+          selected += 1
+          
+      if event.key == K_UP and menu:
+        if selected - 1 < 0:
+          selected = len(menu_options)-1
+        else:
+          selected -= 1
+      
+      if event.key == K_RIGHT and menu:
+        if selected == 0:
+          menu = False
+          
+      if event.key == K_LEFT and not menu:
         if snake[0].dir+2 != 3:
           snake[0].dir = 3
-      elif event.key == K_UP:
+      elif event.key == K_UP and not menu:
         if snake[0].dir+2 != 2:
           snake[0].dir = 2
-      elif event.key == K_RIGHT:
+      elif event.key == K_RIGHT and not menu:
         if snake[0].dir-2 != 1:
           snake[0].dir = 1
-      elif event.key == K_DOWN:
+      elif event.key == K_DOWN and not menu:
         if snake[0].dir-2 != 0:
           snake[0].dir = 0
-      if event.key == K_TAB:
-        snake = [Piece(1, 4, 0, grid_size), Piece(1, 3, 0, grid_size), Piece(1, 2, 0, grid_size), Piece(1, 1, 0, grid_size), Piece(2, 4, 0, grid_size), Piece(2, 3, 0, grid_size), Piece(2, 2, 0, grid_size), Piece(2, 1, 0, grid_size)]
-        
-  # Snake
-  head = pygame.Rect(snake[0].x*grid_size, snake[0].y*grid_size, cube_size-1, cube_size-1)
-  for index, snake_piece in enumerate(snake):
-    segment = pygame.Rect(snake_piece.x*grid_size, snake_piece.y*grid_size, cube_size, cube_size)
-    pygame.draw.rect(screen, (0, 255-index*2, 0), segment)
-    
-    if head.colliderect(segment) and index != 0:
-      death = True
-    
-    if not head.colliderect(box):
-      death = True
       
-  if not death:
-    if snake[0].dir == 0:
-      snake.insert(0, Piece(snake[0].x, snake[0].y+1, snake[0].dir, grid_size))
-    elif snake[0].dir == 1:
-      snake.insert(0, Piece(snake[0].x+1, snake[0].y, snake[0].dir, grid_size))
-    elif snake[0].dir == 2:
-      snake.insert(0, Piece(snake[0].x, snake[0].y-1, snake[0].dir, grid_size))
-    elif snake[0].dir == 3:
-      snake.insert(0, Piece(snake[0].x-1, snake[0].y, snake[0].dir, grid_size))
-    snake.pop(len(snake)-1)
-  else:
-    if cube_size > 0:
-      fps = 10
-      cube_size -= 10
+  # Snake
+  if not menu:
+    head = pygame.Rect(snake[0].x*grid_size, snake[0].y*grid_size, cube_size-1, cube_size-1)
+    for index, snake_piece in enumerate(snake):
+      segment = pygame.Rect(snake_piece.x*grid_size, snake_piece.y*grid_size, cube_size, cube_size)
+      pygame.draw.rect(screen, (0, 255-index*2, 0), segment)
+      
+      if head.colliderect(segment) and index != 0:
+        death = True
+      
+      if not head.colliderect(box):
+        death = True
+        
+    if not death:
+      if snake[0].dir == 0:
+        snake.insert(0, Piece(snake[0].x, snake[0].y+1, snake[0].dir, grid_size))
+      elif snake[0].dir == 1:
+        snake.insert(0, Piece(snake[0].x+1, snake[0].y, snake[0].dir, grid_size))
+      elif snake[0].dir == 2:
+        snake.insert(0, Piece(snake[0].x, snake[0].y-1, snake[0].dir, grid_size))
+      elif snake[0].dir == 3:
+        snake.insert(0, Piece(snake[0].x-1, snake[0].y, snake[0].dir, grid_size))
+      snake.pop(len(snake)-1)
     else:
-      fps = 4
+      if cube_size > 0:
+        fps = 20
+        cube_size -= 5
+      else:
+        fps = 8
+        menu = True 
+        death = False
+        score = 0
+        cube_size = grid_size
+        snake = [Piece(1, 4, 1, grid_size), Piece(2, 4, 1, grid_size)]
 
     
   # Food
-  food_rect = pygame.Rect(food.x*grid_size, food.y*grid_size, cube_size, cube_size)
-  pygame.draw.rect(screen, (255, 0, 0), food_rect)
+  if not menu:
+    food_rect = pygame.Rect(food.x*grid_size, food.y*grid_size, cube_size, cube_size)
+    pygame.draw.rect(screen, (255, 0, 0), food_rect)
 
-  if head.colliderect(food_rect):
-    snake.append(Piece(snake[len(snake)-1].x, snake[len(snake)-1].y, snake[len(snake)-1].dir, grid_size))
-    valid_pos = True
-    score += 1
-    while valid_pos:
-      food = Piece(randint(10,900/grid_size), randint(10,900/grid_size), 0, grid_size)
-      for snake_piece in snake:
-        if not (food.x == snake_piece.x and food.y == snake_piece):
-          valid_pos = False
-      
-  # Score
-  score_font = font.render(f"score : {score}", True, (255,255,255))
-  screen.blit(score_font, (0,0))
+    if head.colliderect(food_rect):
+      snake.append(Piece(snake[len(snake)-1].x, snake[len(snake)-1].y, snake[len(snake)-1].dir, grid_size))
+      valid_pos = True
+      score += 1
+      while valid_pos:
+        food = Piece(randint(10,900/grid_size), randint(10,900/grid_size), 0, grid_size)
+        for snake_piece in snake:
+          if not (food.x == snake_piece.x and food.y == snake_piece):
+            valid_pos = False
+        
+    # Score
+    score_font = font.render(f"{score}", True, (255,255,255))
+    screen.blit(score_font, (430,0))
 
   pygame.display.flip() # display the frame
   
