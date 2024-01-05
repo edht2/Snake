@@ -6,13 +6,23 @@ def generate_food(snake, grid_size):
   while not valid_pos:
     food = Piece(randint(0,900/grid_size), randint(0,900/grid_size), 0, grid_size)
     for snake_piece in snake:
-      if not food.x == snake_piece.x and food.y == snake_piece.y:
+      if food.x == snake_piece.x and food.y == snake_piece.y:
+        break
+      else:
         valid_pos = True
+    
   return food
+
+def eat(score, snake):
+  score += 1
+  snake.append(Piece(snake[len(snake)-1].x, snake[len(snake)-1].y, snake[len(snake)-1].dir, grid_size))
+  return snake, score
 
 exit = False
 nhs = False
-hi_score = int(open('hi-scores.txt', 'r').readline().strip())
+hi_score_txt = open('hi-score.txt', 'r')
+hi_score = int(hi_score_txt.readline().strip())
+hi_score_txt.close()
 grid_size = 30
 cube_size = 30
 menu = False
@@ -22,16 +32,19 @@ food = Piece(randint(10,900/grid_size), randint(10,900/grid_size), 0, grid_size)
 box = pygame.Rect(grid_size, grid_size, screen.get_width()-grid_size, screen.get_height()-grid_size)
 font = pygame.font.Font('CONSOLA.TTF', 60)
 mfont = pygame.font.Font('CONSOLA.TTF', 20)
+lfont = pygame.font.Font('CONSOLA.TTF', 30)
 score = 0
 death = False
 menu_options = [
   (' Start ', 0),
-  (' Difficulty ', 1)
+  (' Difficulty ', 1),
+  (' Wall travel ', 2)
 ]
 
 while not exit:
   dt = clock.tick(fps) # set fps
   screen.fill('#001111')
+  
   
   # Menu                                     
   if menu:
@@ -41,6 +54,16 @@ while not exit:
     menu_dimensions = pygame.Rect(screen.get_width()/2-150, screen.get_height()/2-150, 300, 300)
     screen.blit(title, (menu_dimensions.x, menu_dimensions.y-70))
     menu_rect = pygame.draw.rect(screen, (240,240,240), menu_dimensions, 2)
+    if nhs:
+      hs = f"NEW HI - {hi_score}"
+    else:
+      hs = f"SCORE - {score}"
+      
+
+    text = lfont.render(hs, True, '#0000bb')
+    screen.blit(text, (menu_rect.x+10, menu_rect.y+10))
+    index += 30
+      
     for menu_option in menu_options:
       index += 30
       focused_bc = None
@@ -64,10 +87,11 @@ while not exit:
         exit = True
       if event.key == K_DOWN and menu:
         if selected + 1 > len(menu_options) - 1:
-          print("top")
           selected = 0
         else:
           selected += 1
+      if event.key == K_TAB and not menu:
+        food = generate_food(snake, grid_size)
           
       if event.key == K_UP and menu:
         if selected - 1 < 0:
@@ -79,6 +103,7 @@ while not exit:
         if selected == 0:
           menu = False
           nhs = False
+          score = 0
           
       if event.key == K_LEFT and not menu:
         if snake[0].dir+2 != 3:
@@ -96,7 +121,7 @@ while not exit:
   # Snake
   if not menu:
     colour_lg = True
-    head = pygame.Rect(snake[0].x*grid_size, snake[0].y*grid_size, cube_size-1, cube_size-1)
+    head = pygame.Rect(snake[0].x*grid_size, snake[0].y*grid_size, cube_size-10, cube_size-10)
     for index, snake_piece in enumerate(snake):
       segment = pygame.Rect(snake_piece.x*grid_size, snake_piece.y*grid_size, cube_size, cube_size)
       if colour_lg:
@@ -140,15 +165,18 @@ while not exit:
     pygame.draw.rect(screen, (255, 0, 0), food_rect)
 
     if head.colliderect(food_rect):
-      score += 1
-      snake.append(Piece(snake[len(snake)-1].x, snake[len(snake)-1].y, snake[len(snake)-1].dir, grid_size))
+      foo = eat(score, snake)
+      snake = foo[0]
+      score = foo[1]
       food = generate_food(snake, grid_size)
       
      
     # Score
     score_font = font.render(f"{score}", True, (255,255,255))
     if score > hi_score:
-      open('hi-score.txt', 'r').write(score)
+      score_file = open('hi-score.txt', 'w')
+      score_file.write(str(score))
+      score_file.close()
       hi_score = score
       nhs = True
     screen.blit(score_font, (430,0))
